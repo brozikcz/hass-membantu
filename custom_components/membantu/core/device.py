@@ -20,7 +20,6 @@ class Device:
         self.updates_product: list = []
 
         self.update_ble(advertisment)
-        self.client.start()
 
     @property
     def mac(self) -> str:
@@ -37,6 +36,8 @@ class Device:
     def update_ble(self, advertisment: AdvertisementData):
         self.conn_info["last_seen"] = datetime.now(timezone.utc)
         self.conn_info["rssi"] = advertisment.rssi
+
+        self.client.start()
 
         for handler in self.updates_connect:
             handler()

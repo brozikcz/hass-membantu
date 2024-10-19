@@ -1,10 +1,13 @@
 import asyncio
 import logging
 import time
+from asyncio import sleep
 from typing import Callable
 
-from bleak import BleakClient, BLEDevice, BleakError
+from bleak import BleakClient, BLEDevice, BleakError, BaseBleakClient
 from bleak_retry_connector import establish_connection
+
+from homeassistant.core import callback
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,34 +35,56 @@ class Client:
         self.busy = False
         self.power_state = False
 
+        self.reconnect_attempt = 0
+        self.lock_connect = asyncio.Lock()
+
     def start(self):
-        asyncio.create_task(self._loop())
+        asyncio.create_task(self._connect())
 
     def is_online(self):
         return self.client and self.client.is_connected
 
-    def _on_disconnect(self):
+    @callback
+    def _on_disconnect(self, client: BaseBleakClient):
         _LOGGER.debug("disconnect")
-        # self.callback(False)
-        # asyncio.create_task(self._loop())
+        self.callback()
+        asyncio.create_task(self._reconnect())
 
-    async def _loop(self):
-        _LOGGER.debug("Connecting")
-        try:
-            self.client = await establish_connection(
-                BleakClient, self.device, self.device.address, disconnected_callback=self._on_disconnect()
-            )
+    async def _reconnect(self):
+        for i in range(5):
+            _LOGGER.debug(f"reconnecting {i}")
+            await sleep(i*5)
+            if await self._connect():
+                return
+
+    async def _connect(self):
+        async with self.lock_connect:
+            _LOGGER.debug("Connecting")
+            try:
+                if self.client is not None and self.client.is_connected:
+                    return
+
+                self.client = await establish_connection(
+                    BleakClient,
+                    self.device,
+                    self.device.address,
+                    disconnected_callback=self._on_disconnect,
+                    max_attempts=1
+                )
+                self.reconnect_attempt = 0
+                self.callback()
+                await self.client.start_notify(
+                    "0000c306-0000-1000-8000-00805f9b34fb",
+                    self.notification_handler,
+                )
+                return True
+            except asyncio.TimeoutError as exc:
+                _LOGGER.debug("Timeout on connect", exc_info=True)
+            except BleakError as exc:
+                _LOGGER.debug("Error on connect", exc_info=True)
+
             self.callback()
-            await self.client.start_notify(
-                "0000c306-0000-1000-8000-00805f9b34fb",
-                self.notification_handler,
-            )
-        except asyncio.TimeoutError as exc:
-            _LOGGER.debug("Timeout on connect", exc_info=True)
-            raise exc
-        except BleakError as exc:
-            _LOGGER.debug("Error on connect", exc_info=True)
-            raise exc
+            return False
 
     def notification_handler(self, sender, data):
         """Simple notification handler which prints the data received."""
@@ -166,6 +191,8 @@ class Client:
 
     async def send_cmd(self, data):
         print(f"data: {data}, state: {self.client.is_connected}")
+        if not self.client.is_connected:
+            await self._reconnect()
 
         data_as_bytes = bytearray.fromhex(data)
         await self.client.write_gatt_char(

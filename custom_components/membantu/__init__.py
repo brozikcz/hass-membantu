@@ -16,6 +16,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         service_info: bluetooth.BluetoothServiceInfoBleak,
         change: bluetooth.BluetoothChange,
     ) -> None:
+        print(f"update ble {service_info} {change}")
+
         if device := devices.get(entry.entry_id):
             device.update_ble(service_info)
             return
@@ -28,12 +30,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         )
 
+    @callback
+    def _unavailable_callback(service_info: bluetooth.BluetoothServiceInfoBleak) -> None:
+        print(f"{service_info} is no longer seen")
+        if device := devices.get(entry.entry_id):
+            device.update_ble(service_info)
+
+    entry.async_on_unload(
+        bluetooth.async_track_unavailable(hass, _unavailable_callback, entry.data["mac"], connectable=True)
+    )
+
     # https://developers.home-assistant.io/docs/core/bluetooth/api/
     entry.async_on_unload(
         bluetooth.async_register_callback(
             hass,
             update_ble,
-            {"address": entry.data["mac"], "connectable": True},
+            {"address": entry.data["mac"]},
             bluetooth.BluetoothScanningMode.ACTIVE,
         )
     )
