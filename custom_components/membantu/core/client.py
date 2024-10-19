@@ -78,19 +78,24 @@ class Client:
             print(f"speed: {self.speed}")
         if b == 4:
             self.busy = data[3] == 0 and self.power_state
+        if b == 3:
+            self.timer = data[3]
         if b == 7:
             if data[2] == 3:
                 applied = data[3] * 60
-                remain = data[4]
+                remain = data[4] & 127
             else:
-                applied = (data[3] << 8| data[4]) * 60
-                remain = data[5]
+                applied = ((data[3] << 8)| data[4]) * 60
+                remain = data[5] & 127
             print(f"times: {applied} - {remain}")
 
-        print(f"power state: {self.power_state}")
-        print(f"busy: {self.busy}")
-        print(f"data: {list(data)}")
-        self.callback()
+        if b == 6:
+            print(f"data: {list(data)}")
+        else:
+            print(f"power state: {self.power_state}")
+            print(f"busy: {self.busy}")
+            print(f"timer: {self.timer}")
+            self.callback()
 
     def ping(self):
         self.ping_time = time.time() + ACTIVE_TIME

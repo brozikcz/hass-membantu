@@ -50,7 +50,7 @@ class Device:
             handler()
 
     async def select_option(self, attr: str, option: str):
-        await self.client.send_cmd(f"AA0403{option}DD0D0A")
+        await self.client.send_cmd(f"AA0301{option}DD0D0A")
 
     async def set_value(self, attr: str, value: int):
         await self.client.send_cmd(f"AA0201{f"0{value}" if value < 10 else f"0A"}DD0D0A")
