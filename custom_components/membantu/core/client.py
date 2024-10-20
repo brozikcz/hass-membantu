@@ -100,7 +100,7 @@ class Client:
 
         if b == 2:
             self.speed = data[3]
-            print(f"speed: {self.speed}")
+            _LOGGER.debug(f"speed: {self.speed}")
         if b == 4:
             self.busy = data[3] == 0 and self.power_state
         if b == 3:
@@ -112,14 +112,14 @@ class Client:
             else:
                 applied = ((data[3] << 8)| data[4]) * 60
                 remain = data[5] & 127
-            print(f"times: {applied} - {remain}")
+            _LOGGER.debug(f"times: {applied} - {remain}")
 
         if b == 6:
             print(f"data: {list(data)}")
         else:
-            print(f"power state: {self.power_state}")
-            print(f"busy: {self.busy}")
-            print(f"timer: {self.timer}")
+            _LOGGER.debug(f"power state: {self.power_state}")
+            _LOGGER.debug(f"busy: {self.busy}")
+            _LOGGER.debug(f"timer: {self.timer}")
             self.callback()
 
     def ping(self):
@@ -190,7 +190,7 @@ class Client:
         self.ping_task = None
 
     async def send_cmd(self, data):
-        print(f"data: {data}, state: {self.client.is_connected}")
+        _LOGGER.debug(f"data: {data}, state: {self.client.is_connected}")
         if not self.client.is_connected:
             await self._reconnect()
 

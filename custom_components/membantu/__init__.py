@@ -1,3 +1,5 @@
+import logging
+
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -6,7 +8,7 @@ from .core import DOMAIN
 from .core.device import Device
 
 PLATFORMS = ["binary_sensor", "switch", "number", "select"]
-
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     devices = hass.data.setdefault(DOMAIN, {})
@@ -16,7 +18,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         service_info: bluetooth.BluetoothServiceInfoBleak,
         change: bluetooth.BluetoothChange,
     ) -> None:
-        print(f"update ble {service_info} {change}")
+        _LOGGER.debug(f"update ble {service_info} {change}")
 
         if device := devices.get(entry.entry_id):
             device.update_ble(service_info)
@@ -32,7 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     @callback
     def _unavailable_callback(service_info: bluetooth.BluetoothServiceInfoBleak) -> None:
-        print(f"{service_info} is no longer seen")
+        _LOGGER.debug(f"{service_info} is no longer seen")
         if device := devices.get(entry.entry_id):
             device.update_ble(service_info)
 
