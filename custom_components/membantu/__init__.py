@@ -34,7 +34,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     @callback
     def _unavailable_callback(service_info: bluetooth.BluetoothServiceInfoBleak) -> None:
-        _LOGGER.debug(f"{service_info} is no longer seen")
+        _LOGGER.debug(f"is no longer seen {service_info}")
         if device := devices.get(entry.entry_id):
             device.update_ble(service_info)
 
