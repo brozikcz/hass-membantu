@@ -121,3 +121,8 @@ class Client:
             data_as_bytes,
             False,
         )
+
+    def disconnect(self):
+        if self.client is not None:
+           self.client.disconnect()
+

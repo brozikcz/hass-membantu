@@ -18,7 +18,6 @@ async def async_setup_entry(
 
     add_entities([MembantuSensor(device, "connection")])
 
-
 class MembantuSensor(MembantuEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_entity_category = EntityCategory.DIAGNOSTIC

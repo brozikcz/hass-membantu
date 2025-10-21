@@ -25,6 +25,9 @@ class Device:
     def mac(self) -> str:
         return self.client.device.address
 
+    def disconnect(self):
+        self.client.disconnect()
+
     def register_update(self, attr: str, handler: Callable):
         if attr == "product":
             return
